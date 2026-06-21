@@ -1,0 +1,171 @@
+================================================================================
+            FMS DELHI TRAJECTORY SIMULATOR - MATHEMATICAL METHODOLOGY
+================================================================================
+Document Version: 1.0.0
+Author: Senior Product Manager, Data Scientist & Full-Stack Engineer
+Target Institute: Faculty of Management Studies (FMS), Delhi
+================================================================================
+
+This document details the calculations, data structures, and mathematical 
+formulas driving the FMS Delhi Trajectory Simulator. The engine operates on two 
+core concepts: Readiness Estimation (Phase 1) and Mock Test Overlay (Phase 2). 
+
+Unlike arbitrary probability models, this simulator is deterministic, 
+transparent, and operates purely on inputs extracted from the student's 
+Study Logs and Questions Database.
+
+--------------------------------------------------------------------------------
+1. READINESS ENGINE (PHASE 1)
+--------------------------------------------------------------------------------
+The readiness score for each section (VARC, DILR, QA) is computed out of 100 
+using five weighted factors:
+
+    Readiness Factor Weights (Configurable, defaults shown below):
+    - Study Logs (Hours) [w_hours]:        40% (0.40)
+    - Question Volume [w_volume]:          25% (0.25)
+    - AI Solved Ratio [w_solved]:          20% (0.20)
+    - Topic Coverage [w_topic]:            10% (0.10)
+    - Study Consistency [w_consistency]:     5% (0.05)
+
+FORMULA:
+  Section Readiness = (F_hours * w_hours) +
+                      (F_coverage * w_volume) +
+                      (F_solved * w_solved) +
+                      (F_topic * w_topic) +
+                      (F_consistency * w_consistency)
+
+Where:
+
+A. STUDY LOGS FACTOR (F_hours)
+   Calculates total study hours (H) logged under the respective section 
+   relative to a target hours value (T_H). Target hours are configurable 
+   (Defaults: VARC = 50h, DILR = 40h, QA = 50h).
+   
+   Formula:
+     F_hours = Min(100, (H_section / T_H_section) * 100)
+
+B. QUESTION COVERAGE FACTOR (F_coverage)
+   Calculates the count of questions (Q) logged in the database for the 
+   section relative to a target count (T_Q). Target counts are configurable 
+   (Defaults: VARC = 150, DILR = 120, QA = 150).
+   
+   Formula:
+     F_coverage = Min(100, (Q_section / T_Q_section) * 100)
+
+C. SOLVED QUESTIONS RATIO FACTOR (F_solved)
+   Calculates the percentage of logged questions that have an AI solution 
+   generated (S). An unsolved question is logged in the DB with a null 
+   or empty solution field.
+   
+   Formula:
+     If Q_section > 0:
+       F_solved = (S_section / Q_section) * 100
+     Else:
+       F_solved = 0
+
+D. TOPIC COVERAGE FACTOR (F_topic)
+   Calculates the proportion of unique subtopics with at least one question 
+   logged in the database, relative to the total number of subtopics (N) 
+   defined for that section in constants.ts.
+   
+   Subtopic Totals:
+   - VARC: 14 subtopics (RC = 9, VA = 5)
+   - DILR: 23 subtopics (LR = 11, DI = 12)
+   - QA: 37 subtopics (Arithmetic = 9, Algebra = 7, Geometry = 8, Number = 7, Modern = 6)
+   
+   Formula:
+     F_topic = (Unique_Subtopics_With_Questions / N_section) * 100
+
+E. STUDY CONSISTENCY FACTOR (F_consistency)
+   Calculates activity frequency in the last 28 days.
+   Let A_days be the number of days in the last 28 days where a study log was 
+   created or a question was added. 
+   - Section-Specific Consistency: Target is 12 active days.
+     F_consistency = Min(100, (A_days_section / 12) * 100)
+   - Overall Consistency (index): Target is 16 active days.
+     Consistency Index = Min(100, (A_days_overall / 16) * 100)
+
+--------------------------------------------------------------------------------
+2. OVERALL READINESS SCORE
+--------------------------------------------------------------------------------
+Overall readiness is the weighted average of individual sectional readiness 
+scores using the configurable Preparation Weightage.
+
+    Prep Weightages (Configurable, defaults shown below):
+    - VARC [w_prep_varc]: 40% (0.40)
+    - DILR [w_prep_dilr]: 30% (0.30)
+    - QA   [w_prep_qa]:   30% (0.30)
+
+FORMULA:
+  Overall Readiness = (Readiness_VARC * w_prep_varc) +
+                      (Readiness_DILR * w_prep_dilr) +
+                      (Readiness_QA * w_prep_qa)
+
+--------------------------------------------------------------------------------
+3. PROJECTED CAT SCORE & TARGET GAP
+--------------------------------------------------------------------------------
+The Projected score estimates marks based on readiness and the configurable 
+Target scores (Defaults: VARC = 40, DILR = 35, QA = 40. Total = 115).
+
+FORMULAS:
+  - Projected_VARC = (Readiness_VARC / 100) * Target_VARC
+  - Projected_DILR = (Readiness_DILR / 100) * Target_DILR
+  - Projected_QA   = (Readiness_QA / 100) * Target_QA
+
+  - Total Projected Score = Projected_VARC + Projected_DILR + Projected_QA
+  - Target Gap            = Target_Overall - Total Projected Score
+
+--------------------------------------------------------------------------------
+4. BOTTLENECK ANALYSIS
+--------------------------------------------------------------------------------
+The bottleneck section is identified by comparing the readiness scores of the 
+three sections:
+  1. Calculate readiness for VARC, DILR, QA.
+  2. The section with the lowest readiness score is marked as the "Bottleneck".
+  3. The simulator explains the bottleneck by identifying if it has the lowest 
+     study hours or lowest topic coverage compared to others.
+
+--------------------------------------------------------------------------------
+5. MARGINAL RETURN ANALYSIS
+--------------------------------------------------------------------------------
+Calculates the estimated increase in projected marks if the user puts their next 
+10 study hours into a specific section.
+
+For each section X:
+  1. Current Projected Score (Proj_current) is calculated.
+  2. We simulate adding 10 hours to the study log:
+     - Study Hours: Hours_sim = Hours_current + 10
+     - Questions: Qs_sim = Qs_current + 10 * Speed_X
+       (Speed: VARC = 4 Qs/hr, DILR = 2 Qs/hr, QA = 3 Qs/hr)
+     - Solved Qs: Solved_sim = Solved_current + 10 * Speed_X * 0.9 
+       (assumes 90% of newly added questions are solved)
+     - Subtopics Gained: Gained = Floor((10 * Speed_X) / 15)
+       (uncovered subtopics are reduced accordingly)
+     - Consistency: Simulated consistency = Min(100, Consistency_current + 8)
+  3. Simulated Readiness (Readiness_sim) is calculated.
+  4. Simulated Projected Score: Proj_sim = (Readiness_sim / 100) * Target_X
+  5. Marginal Return = Proj_sim - Proj_current (rounded to 1 decimal place)
+
+--------------------------------------------------------------------------------
+6. MONTE CARLO SIMULATION PLACEHOLDER (PHASE 2)
+--------------------------------------------------------------------------------
+Estimates target score achievement probabilities using a normal (Gaussian) 
+distribution model:
+  - Mean (μ): The Total Projected Score.
+  - Standard Deviation (σ): Hardcoded to 12 (represents standard mock volatility).
+  - Shaded bands show the score distribution from -3.5σ to +3.5σ.
+  - Cumulative Probability of reaching the FMS Delhi target score (T) is:
+      P(Score >= T) = 1 - Cumulative_Normal_Distribution(T, μ, σ)
+      Calculated using an error function (erf) approximation.
+
+--------------------------------------------------------------------------------
+7. FUTURE MOCK INTEGRATION ARCHITECTURE (PHASE 2)
+--------------------------------------------------------------------------------
+Exposes a sandbox predictive overlay hook. When enabled:
+  - Average of the last 3 simulated mocks is calculated for each section: 
+    Mock_Avg.
+  - Mock Readiness Factor = (Mock_Avg / Sectional_Target) * 100
+  - Section Readiness is adjusted:
+      Adjusted_Readiness = Base_Readiness * (1 - w_mock) + Mock_Readiness_Factor * w_mock
+      Where w_mock is the configurable Mock Weight (Default: 50% / 0.50).
+================================================================================

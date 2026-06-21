@@ -1,0 +1,17 @@
+{
+  "appId": "com.catknowledgevault.app",
+  "productName": "CAT Knowledge Vault",
+  "files": [
+    "dist/**",
+    "node_modules/**",
+    "package.json",
+    "prisma/**",
+    "images/**"
+  ],
+  "directories": {
+    "buildResources": "assets"
+  },
+  "mac": {
+    "target": ["dmg", "zip"]
+  }
+}

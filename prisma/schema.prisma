@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Question {
+  id         Int             @id @default(autoincrement())
+  section    String
+  solution   String?
+  bookmarked Boolean         @default(false)
+  notes      String          @default("")
+  flairs     String          @default("")
+  subtopic   String          @default("")
+  topic      String          @default("")
+  images     QuestionImage[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+model QuestionImage {
+  id         Int      @id @default(autoincrement())
+  path       String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId Int
+}
+
+model StudyLog {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  hours     Int
+  minutes   Int
+  section   String   @default("ALL")
+  tag       String   @default("")
+  note      String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model ReportCard {
+  id            String   @id
+  name          String
+  paperType     String
+  sectionalType String?
+  varcTotalQs   Int
+  dilrTotalQs   Int
+  qaTotalQs     Int
+  varcRows      String   // Stringified JSON array of ReportRow
+  dilrRows      String   // Stringified JSON array of ReportRow
+  qaRows        String   // Stringified JSON array of ReportRow
+  createdAt     DateTime @default(now())
+}
