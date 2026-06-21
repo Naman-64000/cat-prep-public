@@ -2,8 +2,8 @@ import { Dispatch, SetStateAction } from 'react'
 import { sections, sectionLabels } from '../utils/constants'
 
 type SidebarProps = {
-  active: 'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'FMS_SIMULATOR' | 'TRACKER'
-  onChange: Dispatch<SetStateAction<'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'FMS_SIMULATOR' | 'TRACKER'>>
+  active: 'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER'
+  onChange: Dispatch<SetStateAction<'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER'>>
   theme: 'light' | 'dark'
   onThemeToggle: () => void
 }
@@ -19,8 +19,6 @@ function Sidebar({ active, onChange, theme, onThemeToggle }: SidebarProps) {
         return 'bg-[#10B981]'
       case 'ANALYTICS':
         return 'bg-[#EC4899]'
-      case 'FMS_SIMULATOR':
-        return 'bg-[#F59E0B]'
       case 'TRACKER':
         return 'bg-[#38BDF8]'
       default:
@@ -70,21 +68,6 @@ function Sidebar({ active, onChange, theme, onThemeToggle }: SidebarProps) {
               />
             )}
             Analytics
-          </button>
-          <button
-            className={`relative w-full rounded-xl pl-7 pr-3.5 py-2.5 text-left text-xs font-semibold transition-all duration-200 cursor-pointer ${
-              active === 'FMS_SIMULATOR'
-                ? 'bg-white border border-[#c5c1b8] text-slate-800 shadow-sm dark:bg-[#273449] dark:border-slate-800 dark:text-slate-100 font-bold'
-                : 'bg-transparent border border-transparent text-appText-muted hover:text-appText-primary hover:bg-[#eae7e1]/50 dark:hover:bg-slate-800/40'
-            }`}
-            onClick={() => onChange('FMS_SIMULATOR')}
-          >
-            {active === 'FMS_SIMULATOR' && (
-              <span
-                className={`absolute left-3 top-3.5 w-1 h-3 rounded-full ${getIndicatorColor('FMS_SIMULATOR')}`}
-              />
-            )}
-            FMS Simulator
           </button>
           <button
             className={`relative w-full rounded-xl pl-7 pr-3.5 py-2.5 text-left text-xs font-semibold transition-all duration-200 cursor-pointer ${

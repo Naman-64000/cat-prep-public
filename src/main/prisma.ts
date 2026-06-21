@@ -8,9 +8,9 @@ const isDev = process.env.NODE_ENV !== 'production' || !app.isPackaged
 function getDatabaseUrl() {
   let dbPath: string
   if (isDev) {
-    dbPath = path.join(app.getAppPath(), 'prisma', 'dev.db')
+    dbPath = path.join(app.getAppPath(), 'prisma', 'public.db')
   } else {
-    dbPath = path.join(app.getPath('userData'), 'dev.db')
+    dbPath = path.join(app.getPath('userData'), 'public.db')
   }
 
   // Ensure parent directory exists
@@ -21,7 +21,7 @@ function getDatabaseUrl() {
 
   // In production, copy template database if it doesn't exist
   if (!isDev && !fs.existsSync(dbPath)) {
-    const templatePath = path.join(app.getAppPath(), 'prisma', 'dev.db')
+    const templatePath = path.join(app.getAppPath(), 'prisma', 'public.db')
     if (fs.existsSync(templatePath)) {
       try {
         fs.copyFileSync(templatePath, dbPath)

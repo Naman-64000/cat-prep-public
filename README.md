@@ -84,7 +84,7 @@ cat-prep/
 │   └── assets/
 ├── prisma/
 │   ├── schema.prisma
-│   └── dev.db
+│   └── public.db
 ├── src/
 │   ├── main/
 │   │   ├── index.ts        # Electron main process & IPC handlers
@@ -153,7 +153,7 @@ cat-prep/
 3. Create a `.env` file in the project root:
    ```env
    GEMINI_API_KEY=your_google_gemini_api_key_here
-   DATABASE_URL="file:./prisma/dev.db"
+   DATABASE_URL="file:./prisma/public.db"
    ```
 4. Install dependencies:
    ```bash

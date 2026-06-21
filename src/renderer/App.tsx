@@ -3,10 +3,9 @@ import Sidebar from './components/Sidebar'
 import SectionPage from './components/SectionPage'
 import StudyTracker from './components/StudyTracker'
 import Analytics from './components/Analytics'
-import CollegeTracker from './components/CollegeTracker'
 
 function App() {
-  const [activePage, setActivePage] = useState<'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'FMS_SIMULATOR' | 'TRACKER'>('VARC')
+  const [activePage, setActivePage] = useState<'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER'>('VARC')
   const [apiError, setApiError] = useState<string | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme')
@@ -36,9 +35,6 @@ function App() {
     }
     if (activePage === 'ANALYTICS') {
       return <Analytics />
-    }
-    if (activePage === 'FMS_SIMULATOR') {
-      return <CollegeTracker />
     }
     return <SectionPage section={activePage} />
   }, [activePage])
