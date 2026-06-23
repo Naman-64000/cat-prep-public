@@ -1,0 +1,16 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd /Users/namanjaswani/Downloads/cat-prep && node - <<'NODE'\ntry \\{\n  const sdk = require\\('@google/generative-ai'\\);\n  console\\.log\\('sdk keys', Object\\.keys\\(sdk\\)\\);\n  console\\.log\\('GoogleGenerativeAI exists', !!sdk\\.GoogleGenerativeAI\\);\n\\} catch\\(err\\)\\{\n  console\\.error\\('ERR', err\\.message\\);\n\\}\nNODE$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /Users/namanjaswani/Downloads/cat-prep && node - <<'NODE'\nconst \\{ GoogleGenerativeAI \\} = require\\('@google/generative-ai'\\);\nconst fs = require\\('fs'\\);\nconst path = require\\('path'\\);\nconst env = fs\\.readFileSync\\(path\\.join\\(process\\.cwd\\(\\), '\\.env'\\), 'utf8'\\);\nconst geminiKey = env\\.split\\('\\\\n'\\)\\.find\\(l=>l\\.startsWith\\('GEMINI_API_KEY='\\)\\)\\?\\.split\\('='\\)\\[1\\]\\?\\.trim\\(\\);\nif\\(!geminiKey\\)\\{ console\\.error\\('NO KEY'\\); process\\.exit\\(1\\); \\}\nconst genAI = new GoogleGenerativeAI\\(geminiKey\\);\nconst models = \\['gemini-flash-latest','gemini-pro-latest','gemini-2\\.5-flash','gemini-2\\.5-pro','gemini-2\\.0-flash','gemini-2\\.0-flash-lite','gemini-3\\.1-flash-lite'\\];\nfor\\(const name of models\\)\\{\n  console\\.log\\('TEST', name\\);\n  try\\{\n    const model = genAI\\.getGenerativeModel\\(\\{ model: name \\}\\);\n    const res = await model\\.generateContent\\('Hello world'\\);\n    console\\.log\\('SUCCESS', name, res\\.response\\?\\.text\\?\\.\\(\\)\\.slice\\(0,80\\)\\.replace\\(/\\\\n/g,' '\\)\\);\n  \\}catch\\(err\\)\\{\n    console\\.error\\('FAIL', name, err\\?\\.message \\|\\| err\\);\n  \\}\n\\}\nNODE$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /Users/namanjaswani/Downloads/cat-prep && node --input-type=module - <<'NODE'\nimport \\{ GoogleGenerativeAI \\} from '@google/generative-ai';\nimport fs from 'fs';\nimport path from 'path';\nconst env = fs\\.readFileSync\\(path\\.join\\(process\\.cwd\\(\\), '\\.env'\\), 'utf8'\\);\nconst geminiKey = env\\.split\\('\\\\n'\\)\\.find\\(l => l\\.startsWith\\('GEMINI_API_KEY='\\)\\)\\?\\.split\\('='\\)\\[1\\]\\?\\.trim\\(\\);\nif \\(!geminiKey\\) throw new Error\\('Missing GEMINI_API_KEY'\\);\nconst genAI = new GoogleGenerativeAI\\(geminiKey\\);\nconst models = \\['gemini-flash-latest','gemini-pro-latest','gemini-2\\.5-flash','gemini-2\\.5-pro','gemini-2\\.0-flash','gemini-2\\.0-flash-lite','gemini-2\\.5-flash-lite'\\];\nfor \\(const modelName of models\\) \\{\n  try \\{\n    const model = genAI\\.getGenerativeModel\\(\\{ model: modelName \\}\\);\n    const res = await model\\.generateContent\\('Hello world'\\);\n    console\\.log\\('SUCCESS', modelName, res\\.response\\.text\\(\\)\\.slice\\(0,80\\)\\.replace\\(/\\\\n/g,' '\\)\\);\n  \\} catch \\(err\\) \\{\n    console\\.error\\('FAIL', modelName, err\\.message \\|\\| err\\);\n  \\}\n\\}\nNODE$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

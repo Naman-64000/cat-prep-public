@@ -1,0 +1,73 @@
+{
+  "appId": "com.catknowledgevault.app",
+  "productName": "CAT Knowledge Vault",
+  "publish": {
+    "provider": "github",
+    "owner": "Naman-64000",
+    "repo": "cat-prep-public"
+  },
+  "files": [
+    "dist/**",
+    "package.json",
+    "prisma/schema.prisma",
+    "prisma/public.db",
+    "images/**",
+    "prisma/generated/client/*.js",
+    "prisma/generated/client/*.d.ts",
+    "prisma/generated/client/package.json",
+    "prisma/generated/client/schema.prisma",
+    "prisma/generated/client/runtime/**/*"
+  ],
+  "directories": {
+    "buildResources": "assets",
+    "output": "release"
+  },
+  "asar": true,
+  "mac": {
+    "target": ["dmg"],
+    "identity": null,
+    "icon": "assets/icon.icns",
+    "files": [
+      "prisma/generated/client/libquery_engine-darwin-arm64.dylib.node"
+    ],
+    "asarUnpack": [
+      "**/node_modules/.prisma/**",
+      "**/node_modules/@prisma/client/**",
+      "**/prisma/generated/client/**"
+    ]
+  },
+  "dmg": {
+    "background": null,
+    "backgroundColor": "#F4F2EE",
+    "iconSize": 100,
+    "icon": null,
+    "contents": [
+      {
+        "x": 130,
+        "y": 220,
+        "type": "file"
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ],
+    "window": {
+      "width": 540,
+      "height": 380
+    }
+  },
+  "win": {
+    "target": ["nsis", "zip"],
+    "files": [
+      "prisma/generated/client/query_engine-windows.dll.node"
+    ],
+    "asarUnpack": [
+      "**/node_modules/.prisma/**",
+      "**/node_modules/@prisma/client/**",
+      "**/prisma/generated/client/**"
+    ]
+  }
+}

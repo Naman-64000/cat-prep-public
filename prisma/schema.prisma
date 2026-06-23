@@ -1,0 +1,88 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./generated/client"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id // lowercase email address
+  password     String       // hashed password
+  salt         String       // random salt
+  geminiApiKey String?      // user-specific gemini api key
+  createdAt    DateTime     @default(now())
+  questions    Question[]
+  studyLogs    StudyLog[]
+  reports      ReportCard[]
+  suggestions  Suggestion[]
+}
+
+model Question {
+  id              Int             @id @default(autoincrement())
+  section         String
+  solution        String?
+  generationCount Int             @default(0)
+  bookmarked      Boolean         @default(false)
+  notes           String          @default("")
+  flairs          String          @default("")
+  subtopic        String          @default("")
+  topic           String          @default("")
+  images          QuestionImage[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model QuestionImage {
+  id         Int      @id @default(autoincrement())
+  path       String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId Int
+}
+
+model StudyLog {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  hours     Int
+  minutes   Int
+  section   String   @default("ALL")
+  tag       String   @default("")
+  note      String   @default("")
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ReportCard {
+  id            String   @id
+  name          String
+  paperType     String
+  sectionalType String?
+  varcTotalQs   Int
+  dilrTotalQs   Int
+  qaTotalQs     Int
+  varcRows      String   // Stringified JSON array of ReportRow
+  dilrRows      String   // Stringified JSON array of ReportRow
+  qaRows        String   // Stringified JSON array of ReportRow
+  totalAttempted Int      @default(0)
+  totalCorrect   Int      @default(0)
+  totalIncorrect Int      @default(0)
+  marks          Int      @default(0)
+  createdAt     DateTime @default(now())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Suggestion {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+

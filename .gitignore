@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.DS_Store
+.env
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+release/
+prisma/generated/
+prisma/*.json
