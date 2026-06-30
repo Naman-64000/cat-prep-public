@@ -525,6 +525,60 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
     }
   }, [filteredReports, reportFilter])
 
+  const capabilityReports = useMemo(() => {
+    return reports.filter(r => {
+      if (!r.id.endsWith('_capability')) return false
+      const parentId = r.id.replace('_capability', '')
+      return filteredReports.some(pr => pr.id === parentId)
+    })
+  }, [reports, filteredReports])
+
+  const capabilityAggregateStats = useMemo(() => {
+    if (reportFilter === 'ALL' || capabilityReports.length === 0) return null
+
+    let totalQs = 0
+    let attemptedQs = 0
+    let correctQs = 0
+    let incorrectQs = 0
+    let notAnsweredQs = 0
+    let totalMarksScored = 0
+    let totalMaxMarks = 0
+
+    capabilityReports.forEach((report) => {
+      const tab: 'ALL' | 'VARC' | 'DILR' | 'QA' =
+        reportFilter === 'FULL_MOCK'
+          ? 'ALL'
+          : reportFilter === 'QUANTS'
+          ? 'QA'
+          : (reportFilter as 'VARC' | 'DILR')
+
+      const stats = calculateReportStats(report, tab)
+      totalQs += stats.totalQs
+      attemptedQs += stats.attemptedQs
+      correctQs += stats.correctQs
+      incorrectQs += stats.incorrectQs
+      notAnsweredQs += stats.notAnsweredQs
+      totalMarksScored += stats.marksScored
+      totalMaxMarks += stats.totalMarks
+    })
+
+    const avgMarksScored = totalMarksScored / capabilityReports.length
+    const avgTotalMarks = totalMaxMarks / capabilityReports.length
+
+    const avgAccuracy = attemptedQs > 0 ? ((correctQs / attemptedQs) * 100).toFixed(1) : '0'
+    const avgAttemptRate = totalQs > 0 ? ((attemptedQs / totalQs) * 100).toFixed(1) : '0'
+
+    return {
+      avgMarksScored,
+      avgTotalMarks,
+      avgAccuracy,
+      avgAttemptRate,
+      totalCorrect: correctQs,
+      totalIncorrect: incorrectQs,
+      totalNotAnswered: notAnsweredQs,
+    }
+  }, [capabilityReports, reportFilter])
+
   const mockChartData = useMemo(() => {
     return reports.filter(r => !r.id.endsWith('_capability')).map(r => {
       const stats = calculateReportStats(r, 'ALL')
@@ -2375,76 +2429,142 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
             </button>
           </div>
 
-          {showSectionAnalysis && sectionAggregateStats && (
-            <div className="rounded-2xl border border-appBorder bg-cardBg-default p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-appBorder pb-3">
-                <div>
-                  <h4 className="text-xs font-extrabold text-appText-primary uppercase tracking-wider">
-                    {reportFilter === 'FULL_MOCK' ? 'Full Mock' : reportFilter} Section Analysis
-                  </h4>
-                  <p className="text-[10px] text-appText-muted mt-0.5">
-                    Aggregate statistics across {filteredReports.length} {filteredReports.length === 1 ? 'mock' : 'mocks'}
-                  </p>
-                </div>
-              </div>
+          {showSectionAnalysis && (
+            <div className="flex flex-col gap-4">
+              {sectionAggregateStats && (
+                <div className="rounded-2xl border border-appBorder bg-cardBg-default p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-appBorder pb-3">
+                    <div>
+                      <h4 className="text-xs font-extrabold text-appText-primary uppercase tracking-wider">
+                        {reportFilter === 'FULL_MOCK' ? 'Full Mock' : reportFilter} Section Analysis
+                      </h4>
+                      <p className="text-[10px] text-appText-muted mt-0.5">
+                        Aggregate statistics across {filteredReports.length} {filteredReports.length === 1 ? 'mock' : 'mocks'}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 p-4 rounded-xl bg-appBg-secondary/50 border border-appBorder">
-                <div className="text-center p-2 relative group animate-fadeIn">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average Marks Scored</span>
-                  <span className={`text-2xl font-black font-mono cursor-help ${
-                    reportFilter === 'FULL_MOCK'
-                      ? 'text-indigo-500'
-                      : reportFilter === 'VARC'
-                      ? 'text-[#3B82F6]'
-                      : reportFilter === 'DILR'
-                      ? 'text-[#8B5CF6]'
-                      : 'text-[#10B981]'
-                  }`}>
-                    {sectionAggregateStats.avgMarksScored.toFixed(1).replace(/\.0$/, '')}
-                    <span className="text-xs text-appText-disabled font-normal">
-                      /{sectionAggregateStats.avgTotalMarks.toFixed(1).replace(/\.0$/, '')}
-                    </span>
-                  </span>
-                  <div className="absolute z-10 hidden group-hover:block bg-slate-950 text-white text-[9px] rounded-lg px-2.5 py-1.5 bottom-full mb-1.5 left-1/2 transform -translate-x-1/2 whitespace-nowrap shadow-xl border border-appBorder">
-                    Scoring rules: +3 for Correct, -1 for Incorrect (0 penalty for TITA questions).
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 p-4 rounded-xl bg-appBg-secondary/50 border border-appBorder">
+                    <div className="text-center p-2 relative group animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average Marks Scored</span>
+                      <span className={`text-2xl font-black font-mono cursor-help ${
+                        reportFilter === 'FULL_MOCK'
+                          ? 'text-indigo-500'
+                          : reportFilter === 'VARC'
+                          ? 'text-[#3B82F6]'
+                          : reportFilter === 'DILR'
+                          ? 'text-[#8B5CF6]'
+                          : 'text-[#10B981]'
+                      }`}>
+                        {sectionAggregateStats.avgMarksScored.toFixed(1).replace(/\.0$/, '')}
+                        <span className="text-xs text-appText-disabled font-normal">
+                          /{sectionAggregateStats.avgTotalMarks.toFixed(1).replace(/\.0$/, '')}
+                        </span>
+                      </span>
+                      <div className="absolute z-10 hidden group-hover:block bg-slate-950 text-white text-[9px] rounded-lg px-2.5 py-1.5 bottom-full mb-1.5 left-1/2 transform -translate-x-1/2 whitespace-nowrap shadow-xl border border-appBorder">
+                        Scoring rules: +3 for Correct, -1 for Incorrect (0 penalty for TITA questions).
+                      </div>
+                    </div>
+
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average accuracy</span>
+                      <span className="text-2xl font-black text-emerald-500 font-mono">
+                        {sectionAggregateStats.avgAccuracy}%
+                      </span>
+                    </div>
+
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average attempt rate</span>
+                      <span className="text-2xl font-black text-appText-primary font-mono">
+                        {sectionAggregateStats.avgAttemptRate}%
+                      </span>
+                    </div>
+
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Total correct</span>
+                      <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        {sectionAggregateStats.totalCorrect}
+                      </span>
+                    </div>
+
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">total incorrect</span>
+                      <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">
+                        {sectionAggregateStats.totalIncorrect}
+                      </span>
+                    </div>
+
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">total not answered</span>
+                      <span className="text-2xl font-black text-appText-disabled font-mono">
+                        {sectionAggregateStats.totalNotAnswered}
+                      </span>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div className="text-center p-2 animate-fadeIn">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average accuracy</span>
-                  <span className="text-2xl font-black text-emerald-500 font-mono">
-                    {sectionAggregateStats.avgAccuracy}%
-                  </span>
-                </div>
+              {capabilityAggregateStats && (
+                <div className="rounded-2xl border border-amber-500/20 dark:border-amber-500/30 bg-cardBg-default p-5 shadow-sm space-y-4 animate-fadeIn">
+                  <div className="flex items-center justify-between border-b border-appBorder pb-3">
+                    <div>
+                      <h4 className="text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                        {reportFilter === 'FULL_MOCK' ? 'Full Mock' : reportFilter} Capability Analysis
+                      </h4>
+                      <p className="text-[10px] text-appText-muted mt-0.5">
+                        Aggregate capability statistics across {capabilityReports.length} {capabilityReports.length === 1 ? 'report' : 'reports'} (untimed)
+                      </p>
+                    </div>
+                  </div>
 
-                <div className="text-center p-2 animate-fadeIn">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average attempt rate</span>
-                  <span className="text-2xl font-black text-appText-primary font-mono">
-                    {sectionAggregateStats.avgAttemptRate}%
-                  </span>
-                </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 p-4 rounded-xl bg-amber-500/[0.02] border border-amber-500/15">
+                    <div className="text-center p-2 relative group animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average Marks</span>
+                      <span className="text-2xl font-black font-mono text-amber-500">
+                        {capabilityAggregateStats.avgMarksScored.toFixed(1).replace(/\.0$/, '')}
+                        <span className="text-xs text-appText-disabled font-normal">
+                          /{capabilityAggregateStats.avgTotalMarks.toFixed(1).replace(/\.0$/, '')}
+                        </span>
+                      </span>
+                    </div>
 
-                <div className="text-center p-2 animate-fadeIn">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Total correct</span>
-                  <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                    {sectionAggregateStats.totalCorrect}
-                  </span>
-                </div>
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average accuracy</span>
+                      <span className="text-2xl font-black text-emerald-500 font-mono">
+                        {capabilityAggregateStats.avgAccuracy}%
+                      </span>
+                    </div>
 
-                <div className="text-center p-2 animate-fadeIn">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">total incorrect</span>
-                  <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">
-                    {sectionAggregateStats.totalIncorrect}
-                  </span>
-                </div>
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">average attempt rate</span>
+                      <span className="text-2xl font-black text-appText-primary font-mono">
+                        {capabilityAggregateStats.avgAttemptRate}%
+                      </span>
+                    </div>
 
-                <div className="text-center p-2 animate-fadeIn">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">total not answered</span>
-                  <span className="text-2xl font-black text-appText-disabled font-mono">
-                    {sectionAggregateStats.totalNotAnswered}
-                  </span>
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Total correct</span>
+                      <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        {capabilityAggregateStats.totalCorrect}
+                      </span>
+                    </div>
+
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">total incorrect</span>
+                      <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">
+                        {capabilityAggregateStats.totalIncorrect}
+                      </span>
+                    </div>
+
+                    <div className="text-center p-2 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">total not answered</span>
+                      <span className="text-2xl font-black text-appText-disabled font-mono">
+                        {capabilityAggregateStats.totalNotAnswered}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
