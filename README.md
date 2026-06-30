@@ -34,7 +34,7 @@ CAT Knowledge Vault is designed to help aspirants organize CAT practice question
   * `VARC` questions accept up to 6 images (e.g. for long reading comprehension passages and multiple questions).
   * `LRDI` questions accept up to 6 images (to support passage + charts).
   * `QUANTS` questions accept a single image.
-* **Drag & Drop Upload Zone**: Drag and drop question screenshots to upload.
+* **Drag & Drop Upload Zone**: Drag and drop question screenshots to upload. Supports dragging and dropping anywhere on the screen with a premium full-screen blurred backdrop overlay (styled for both light and dark modes).
 * **Clipboard Paste Support**: Copy any question image to your clipboard and paste directly with `Ctrl+V` or `Cmd+V`.
 * **Chronological Ordering**: Database queries retrieve questions in oldest-first order (ascending by creation date), meaning older questions remain at the top of the list, and newly added questions are appended at the bottom.
 
@@ -86,6 +86,8 @@ CAT Knowledge Vault is designed to help aspirants organize CAT practice question
 * Record sectional or full mock tests inside the app.
 * **Section Filtering**: Filter mock report cards via sectional pills (ALL, VARC, DILR, QUANTS) that auto-focus the active tab.
 * **Fully Positioned Portals**: The glassmorphic mock report addition modal is wrapped in a React Portal (`createPortal`), ensuring it covers 100% of the screen background.
+* **Capability Report Integration**: Allow users to add a non-time-bound score for each mock (an "Capability" report), which reuses the mock's structure and is displayed nested beneath the parent mock in the expanded view, or as secondary marks on the closed card header.
+* **Cascading Deletions**: Deleting a parent mock test card deletes its associated Capability report card from the database. Deleting an Capability card leaves the parent mock test card untouched.
 
 ### 10. Enhanced Study Tracker & Logs Filtering
 * Log daily study sessions with hours, minutes, sections, and notes.
@@ -104,6 +106,9 @@ CAT Knowledge Vault is designed to help aspirants organize CAT practice question
 
 ### 13. Light & Dark Themes
 * **Dynamic Theme Switcher**: Toggle between light and dark modes from the sidebar. The setting is persisted in local storage.
+
+### 14. Color-Coded Toast Notifications
+* **Visual Status Alert**: Toast alerts are colored green for successful operations (uploads, removals, movements) and red for warnings, failed attempts, and invalid entries (e.g. Unsupported file type).
 
 ---
 

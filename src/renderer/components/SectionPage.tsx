@@ -365,14 +365,11 @@ function SectionPage({ section }: SectionPageProps) {
         <NotificationToast
           message={message}
           type={
-            message.toLowerCase().includes('error') ||
-            message.toLowerCase().includes('failed') ||
-            message.toLowerCase().includes('unable') ||
-            message.toLowerCase().includes('gemini key') ||
-            message.toLowerCase().includes('incorrect') ||
-            message.toLowerCase().includes('invalid')
-              ? 'error'
-              : 'success'
+            message.toLowerCase().includes('successfully') ||
+            message.toLowerCase().includes('removed permanently') ||
+            message.toLowerCase().includes('moved to')
+              ? 'success'
+              : 'error'
           }
           onClose={() => setMessage(null)}
         />

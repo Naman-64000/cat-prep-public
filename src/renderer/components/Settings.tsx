@@ -186,7 +186,7 @@ function Settings({ currentUserEmail }: { currentUserEmail: string }) {
               Configure your private Gemini API key. A valid key is required to generate solutions.
             </p>
           </div>
-          <span className="text-[9px] font-mono text-indigo-500 bg-indigo-500/10 px-2 py-0.5 border border-indigo-500/20 rounded uppercase font-bold tracking-wider">
+          <span className="text-[9px] font-mono text-[#3B82F6] dark:text-[#60A5FA] bg-[#3B82F6]/[0.05] dark:bg-[#60A5FA]/[0.05] px-2 py-0.5 border border-[#3B82F6]/20 dark:border-[#60A5FA]/25 rounded uppercase font-bold tracking-wider">
             Custom Key Setup
           </span>
         </div>

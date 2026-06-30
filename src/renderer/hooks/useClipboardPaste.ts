@@ -20,6 +20,12 @@ function useClipboardPaste(onPaste: PasteCallback, onError: ErrorCallback) {
         }
       }
 
+      // If pasting inside an input or textarea, let the default text paste proceed without showing an error popup
+      const target = event.target as HTMLElement
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return
+      }
+
       onError('No image found in clipboard. Use a screenshot and then press Ctrl+V.')
     }
 

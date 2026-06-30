@@ -382,6 +382,15 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
 
   // Modal forms states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isCapabilityMode, setIsCapabilityMode] = useState(false)
+  const [parentMockReport, setParentMockReport] = useState<ReportEntry | null>(null)
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false)
+    setIsCapabilityMode(false)
+    setParentMockReport(null)
+  }
+
   const [newMockName, setNewMockName] = useState('')
   const [newPaperType, setNewPaperType] = useState<'full' | 'sectional'>('full')
   const [newSectionalType, setNewSectionalType] = useState<'varc' | 'dilr' | 'quants'>('varc')
@@ -456,6 +465,7 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
 
   const filteredReports = useMemo(() => {
     return reports.filter(r => {
+      if (r.id.endsWith('_capability')) return false
       if (reportFilter === 'ALL') return true
       // Full mocks only appear under ALL and FULL_MOCK — not under sectional filters
       if (reportFilter === 'FULL_MOCK') return r.paperType === 'full'
@@ -516,7 +526,7 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
   }, [filteredReports, reportFilter])
 
   const mockChartData = useMemo(() => {
-    return reports.map(r => {
+    return reports.filter(r => !r.id.endsWith('_capability')).map(r => {
       const stats = calculateReportStats(r, 'ALL')
       const percent = stats.totalMarks > 0 ? (stats.marksScored / stats.totalMarks) * 100 : 0
       return {
@@ -678,6 +688,8 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
   }
 
   const openAddModal = () => {
+    setIsCapabilityMode(false)
+    setParentMockReport(null)
     setNewMockName('')
     setNewPaperType('full')
     setNewSectionalType('varc')
@@ -695,11 +707,86 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
     setIsAddModalOpen(true)
   }
 
+  const openAddCapabilityModal = (parentReport: ReportEntry) => {
+    setIsCapabilityMode(true)
+    setParentMockReport(parentReport)
+    setNewMockName(`${parentReport.name} (CAPABILITY)`)
+    setNewPaperType(parentReport.paperType)
+    setNewSectionalType(parentReport.sectionalType || 'varc')
+    setNewVarcTotalQs(parentReport.varcTotalQs)
+    setNewDilrTotalQs(parentReport.dilrTotalQs)
+    setNewQaTotalQs(parentReport.qaTotalQs)
+
+    const isVarcNotSure = parentReport.varcRows.some(r => r.subtopic === 'Not Sure' && r.total > 0)
+    const isDilrNotSure = parentReport.dilrRows.some(r => r.subtopic === 'Not Sure' && r.total > 0)
+    const isQaNotSure = parentReport.qaRows.some(r => r.subtopic === 'Not Sure' && r.total > 0)
+
+    setVarcInputStyle(isVarcNotSure ? 'notsure' : 'detailed')
+    setDilrInputStyle(isDilrNotSure ? 'notsure' : 'detailed')
+    setQaInputStyle(isQaNotSure ? 'notsure' : 'detailed')
+
+    setNewVarcRows(parentReport.varcRows.map(r => ({
+      ...r,
+      attempted: 0,
+      correct: 0,
+      incorrect: 0,
+      notAnswered: r.total,
+      titaIncorrect: 0
+    })))
+    setNewDilrRows(parentReport.dilrRows.map(r => ({
+      ...r,
+      attempted: 0,
+      correct: 0,
+      incorrect: 0,
+      notAnswered: r.total,
+      titaIncorrect: 0
+    })))
+    setNewQaRows(parentReport.qaRows.map(r => ({
+      ...r,
+      attempted: 0,
+      correct: 0,
+      incorrect: 0,
+      notAnswered: r.total,
+      titaIncorrect: 0
+    })))
+
+    setIsAddModalOpen(true)
+  }
+
+  const openEditCapabilityModal = (capabilityReport: ReportEntry) => {
+    setIsCapabilityMode(true)
+    const parentId = capabilityReport.id.replace('_capability', '')
+    const parentReport = reports.find(r => r.id === parentId)
+    if (!parentReport) return
+
+    setParentMockReport(parentReport)
+    setNewMockName(capabilityReport.name)
+    setNewPaperType(capabilityReport.paperType)
+    setNewSectionalType(capabilityReport.sectionalType || 'varc')
+    setNewVarcTotalQs(capabilityReport.varcTotalQs)
+    setNewDilrTotalQs(capabilityReport.dilrTotalQs)
+    setNewQaTotalQs(capabilityReport.qaTotalQs)
+
+    const isVarcNotSure = capabilityReport.varcRows.some(r => r.subtopic === 'Not Sure' && r.total > 0)
+    const isDilrNotSure = capabilityReport.dilrRows.some(r => r.subtopic === 'Not Sure' && r.total > 0)
+    const isQaNotSure = capabilityReport.qaRows.some(r => r.subtopic === 'Not Sure' && r.total > 0)
+
+    setVarcInputStyle(isVarcNotSure ? 'notsure' : 'detailed')
+    setDilrInputStyle(isDilrNotSure ? 'notsure' : 'detailed')
+    setQaInputStyle(isQaNotSure ? 'notsure' : 'detailed')
+
+    setNewVarcRows(capabilityReport.varcRows)
+    setNewDilrRows(capabilityReport.dilrRows)
+    setNewQaRows(capabilityReport.qaRows)
+
+    setIsAddModalOpen(true)
+  }
+
   const handleSaveMock = () => {
     if (!isFormValid()) return
 
     const newReport: ReportEntry = {
-      id: `report_${Date.now()}`,
+      id: isCapabilityMode && parentMockReport ? `${parentMockReport.id}_capability` : `report_${Date.now()}`,
       name: newMockName.trim(),
       paperType: newPaperType,
       sectionalType: newPaperType === 'sectional' ? newSectionalType : undefined,
@@ -719,14 +806,17 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
 
     window.electron.invoke('report:save', newReport).then((res: any) => {
       if (res.success) {
-        const updated = [...reports, newReport]
+        const updated = [...reports.filter(r => r.id !== newReport.id), newReport]
         setReports(updated)
-        setExpandedReports(prev => ({ ...prev, [newReport.id]: false }))
+        
+        const parentId = isCapabilityMode && parentMockReport ? parentMockReport.id : newReport.id
+        setExpandedReports(prev => ({ ...prev, [parentId]: isCapabilityMode ? true : false }))
+
         setReportTabs(prev => ({
           ...prev,
           [newReport.id]: newPaperType === 'sectional' ? (newSectionalType === 'quants' ? 'QA' : (newSectionalType === 'varc' ? 'VARC' : 'DILR')) : 'ALL'
         }))
-        setIsAddModalOpen(false)
+        closeAddModal()
       } else {
         alert('Failed to save mock report card: ' + res.error)
       }
@@ -737,10 +827,33 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
     if (confirm('Are you sure you want to permanently delete this report card? This action cannot be undone.')) {
       window.electron.invoke('report:delete', id).then((res: any) => {
         if (res.success) {
-          const updated = reports.filter(r => r.id !== id)
-          setReports(updated)
+          const capabilityId = `${id}_capability`
+          const hasCapability = reports.some(r => r.id === capabilityId)
+          if (hasCapability) {
+            window.electron.invoke('report:delete', capabilityId).then(() => {
+              const updated = reports.filter(r => r.id !== id && r.id !== capabilityId)
+              setReports(updated)
+            })
+          } else {
+            const updated = reports.filter(r => r.id !== id)
+            setReports(updated)
+          }
         } else {
           alert('Failed to delete mock report card: ' + res.error)
+        }
+      })
+    }
+  }
+
+  const handleDeleteCapabilityMock = (parentId: string) => {
+    const capabilityId = `${parentId}_capability`
+    if (confirm('Are you sure you want to permanently delete this Capability report card? This action cannot be undone.')) {
+      window.electron.invoke('report:delete', capabilityId).then((res: any) => {
+        if (res.success) {
+          const updated = reports.filter(r => r.id !== capabilityId)
+          setReports(updated)
+        } else {
+          alert('Failed to delete Capability report card: ' + res.error)
         }
       })
     }
@@ -802,7 +915,7 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
   const daysPct = Math.min(100, (daysCompleted / totalDays) * 100)
 
   // Full Mock averages calculations
-  const fullMocks = reports.filter(r => r.paperType === 'full')
+  const fullMocks = reports.filter(r => r.paperType === 'full' && !r.id.endsWith('_capability'))
   const totalFullMocks = fullMocks.length
 
   const avgVarcMarks = totalFullMocks > 0
@@ -1085,10 +1198,10 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                     <td className="p-2 text-center">
                       <NumberInput
                         value={isQuickInput ? sectionTotalQs : row.total}
-                        disabled={isQuickInput}
+                        disabled={isQuickInput || isCapabilityMode}
                         onChange={(val) => handleRowChange(idx, 'total', val)}
                         className={`w-14 text-center bg-appBg-secondary border rounded p-1 font-mono text-[11px] text-appText-primary focus:outline-none focus:border-indigo-500 ${
-                          isQuickInput ? 'opacity-70 bg-appBg-secondary/50 cursor-not-allowed border-appBorder' : 'border-appBorder'
+                          (isQuickInput || isCapabilityMode) ? 'opacity-70 bg-appBg-secondary/50 cursor-not-allowed border-appBorder' : 'border-appBorder'
                         }`}
                       />
                     </td>
@@ -1978,6 +2091,11 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
             }
           }
 
+          const capabilityReport = reports.find(r => r.id === `${report.id}_capability`)
+          const hasCapabilityReport = !!capabilityReport
+          const capabilityStats = capabilityReport ? calculateReportStats(capabilityReport, activeTab) : null
+          const capabilityMarksScored = capabilityStats ? capabilityStats.marksScored : 0
+
           return (
             <div
               key={report.id}
@@ -2009,6 +2127,37 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                       Scoring rules: +3 for Correct, -1 for Incorrect (0 penalty for TITA questions).
                     </div>
                   </div>
+
+                  {/* Capability section (button or marks) */}
+                  {(() => {
+                    if (hasCapabilityReport && capabilityStats) {
+                      return (
+                        <div className="inline-block select-none">
+                          <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/[0.08] border border-amber-500/20 rounded-full px-3 py-1 font-mono">
+                            {capabilityMarksScored} / {totalMarks} Marks
+                          </span>
+                        </div>
+                      )
+                    } else {
+                      return (
+                        <div className="relative group inline-block select-none">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openAddCapabilityModal(report)
+                            }}
+                            className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/[0.02] hover:bg-amber-500/[0.08] border border-dashed border-amber-500/30 hover:border-amber-500 rounded-full px-2.5 py-1 transition cursor-pointer"
+                          >
+                            + Capability
+                          </button>
+                          <div className="absolute z-10 hidden group-hover:block bg-slate-950 text-white text-[9px] rounded-lg px-2.5 py-1.5 bottom-full mb-2 left-1/2 transform -translate-x-1/2 whitespace-normal w-48 text-center normal-case shadow-xl border border-appBorder">
+                            your score for solving this mock without any time boundation
+                          </div>
+                        </div>
+                      )
+                    }
+                  })()}
 
                   <button
                     type="button"
@@ -2112,8 +2261,73 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                       renderReportTable('Quantitative Aptitude (QA)', [...report.qaRows, getSectionTotalRow('Total QA', report.qaRows, 'QA')], 'QA')}
                   </div>
 
-                  {/* Delete Button inside Expanded Card View */}
-                  <div className="flex justify-end pt-4 border-t border-appBorder/50">
+                  {/* Capability section divider if it exists */}
+                  {hasCapabilityReport && capabilityReport && capabilityStats && (
+                    <div className="border-t border-dashed border-appBorder/60 pt-6 mt-6 space-y-6">
+                      <div className="flex items-center gap-2 select-none">
+                        <span className="text-[10px] bg-amber-500/10 border border-amber-500/30 text-amber-500 font-extrabold tracking-widest px-2 py-0.5 rounded uppercase select-none">
+                          Capability Analysis
+                        </span>
+                        <span className="text-[10px] text-appText-muted">
+                          (Solving this mock without any time boundation)
+                        </span>
+                      </div>
+                      
+                      {/* Capability Stats Ribbon */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 p-4 rounded-xl bg-amber-500/[0.02] border border-amber-500/15">
+                        <div className="text-center p-2 relative group">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Capability Marks</span>
+                          <span className="text-2xl font-black text-amber-500 font-mono cursor-help">
+                            {capabilityMarksScored}<span className="text-xs text-appText-disabled font-normal">/{totalMarks}</span>
+                          </span>
+                        </div>
+                        <div className="text-center p-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Accuracy</span>
+                          <span className="text-2xl font-black text-emerald-500 font-mono">{capabilityStats.accuracy}%</span>
+                        </div>
+                        <div className="text-center p-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Attempt Rate</span>
+                          <span className="text-2xl font-black text-appText-primary font-mono">{capabilityStats.attemptRate}%</span>
+                        </div>
+                        <div className="text-center p-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Correct</span>
+                          <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{capabilityStats.correctQs}</span>
+                        </div>
+                        <div className="text-center p-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Incorrect</span>
+                          <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">{capabilityStats.incorrectQs}</span>
+                        </div>
+                        <div className="text-center p-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-appText-muted block">Not Answered</span>
+                          <span className="text-2xl font-black text-appText-disabled font-mono">{capabilityStats.notAnsweredQs}</span>
+                        </div>
+                      </div>
+
+                      {/* Capability Tables rendering */}
+                      <div className="space-y-8">
+                        {(activeTab === 'ALL' || activeTab === 'VARC') && capabilityReport.varcRows.length > 0 &&
+                          renderReportTable('CAPABILITY: Verbal Ability and Reading Comprehension (VARC)', [...capabilityReport.varcRows, getSectionTotalRow('Total VARC', capabilityReport.varcRows, 'VARC')], 'VARC')}
+                        {(activeTab === 'ALL' || activeTab === 'DILR') && capabilityReport.dilrRows.length > 0 &&
+                          renderReportTable('CAPABILITY: Data Interpretation and Logical Reasoning (DILR)', [...capabilityReport.dilrRows, getSectionTotalRow('Total DILR', capabilityReport.dilrRows, 'DILR')], 'DILR')}
+                        {(activeTab === 'ALL' || activeTab === 'QA') && capabilityReport.qaRows.length > 0 &&
+                          renderReportTable('CAPABILITY: Quantitative Aptitude (QA)', [...capabilityReport.qaRows, getSectionTotalRow('Total QA', capabilityReport.qaRows, 'QA')], 'QA')}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delete / Edit Buttons inside Expanded Card View */}
+                  <div className="flex justify-end gap-3 pt-4 border-t border-appBorder/50">
+                    {hasCapabilityReport && capabilityReport && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCapabilityMock(report.id)}
+                          className="px-4 py-2 rounded-xl border border-rose-500/20 hover:border-rose-500 bg-rose-500/[0.04] hover:bg-rose-500/10 text-rose-500 text-[10px] font-bold uppercase transition duration-150 cursor-pointer"
+                        >
+                          Delete Capability Report
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleDeleteMock(report.id)}
@@ -2242,9 +2456,13 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
           <div className="bg-cardBg-default border border-appBorder rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-5 border-b border-appBorder bg-appBg-secondary/50">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-appText-primary">Add Mock Report Card</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-appText-primary">
+                {isCapabilityMode 
+                  ? (reports.some(r => r.id === `${parentMockReport?.id}_capability`) ? 'Edit Capability Report Card' : 'Add Capability Report Card')
+                  : 'Add Mock Report Card'}
+              </h3>
               <button
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={closeAddModal}
                 className="text-appText-muted hover:text-appText-primary transition cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2255,15 +2473,25 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
 
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+              {isCapabilityMode && (
+                <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] text-amber-600 dark:text-amber-400 space-y-1">
+                  <h4 className="font-bold text-[10px] uppercase tracking-wider">Capability Report Entry Mode</h4>
+                  <p className="text-[10px] font-medium">
+                    You are entering your score for solving this mock without any time boundation. The structure, paper type, sectional configurations, and total questions per subtopic are locked to match the parent mock report.
+                  </p>
+                </div>
+              )}
+
               {/* Mock Name */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-appText-muted">Mock Report Name</label>
                 <input
                   type="text"
                   value={newMockName}
-                  onChange={(e) => setNewMockName(e.target.value)}
+                  onChange={(e) => !isCapabilityMode && setNewMockName(e.target.value)}
+                  disabled={isCapabilityMode}
                   placeholder="e.g. SimCAT 5, Actual CAT 2026..."
-                  className="w-full bg-appBg-secondary border border-appBorder rounded-xl px-4 py-2 text-xs text-appText-primary focus:outline-none focus:border-indigo-500"
+                  className={`w-full bg-appBg-secondary border border-appBorder rounded-xl px-4 py-2 text-xs text-appText-primary focus:outline-none focus:border-indigo-500 ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -2274,23 +2502,25 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => handlePaperTypeChange('full')}
+                      onClick={() => !isCapabilityMode && handlePaperTypeChange('full')}
+                      disabled={isCapabilityMode}
                       className={`flex-1 py-2 px-3 rounded-xl border text-[10px] font-bold uppercase transition cursor-pointer ${
                         newPaperType === 'full'
                           ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-600'
                           : 'bg-appBg-secondary border-appBorder text-appText-secondary hover:bg-cardBg-hover'
-                      }`}
+                      } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                       Full Mock
                     </button>
                     <button
                       type="button"
-                      onClick={() => handlePaperTypeChange('sectional')}
+                      onClick={() => !isCapabilityMode && handlePaperTypeChange('sectional')}
+                      disabled={isCapabilityMode}
                       className={`flex-1 py-2 px-3 rounded-xl border text-[10px] font-bold uppercase transition cursor-pointer ${
                         newPaperType === 'sectional'
                           ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-600'
                           : 'bg-appBg-secondary border-appBorder text-appText-secondary hover:bg-cardBg-hover'
-                      }`}
+                      } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                       Sectional Mock
                     </button>
@@ -2305,12 +2535,13 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                         <button
                           key={sec}
                           type="button"
-                          onClick={() => handleSectionalTypeChange(sec)}
+                          onClick={() => !isCapabilityMode && handleSectionalTypeChange(sec)}
+                          disabled={isCapabilityMode}
                           className={`flex-1 py-2 px-1.5 rounded-xl border text-[9px] font-bold uppercase transition cursor-pointer ${
                             newSectionalType === sec
                               ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-600'
                               : 'bg-appBg-secondary border-appBorder text-appText-secondary hover:bg-cardBg-hover'
-                          }`}
+                          } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
                           {sec === 'quants' ? 'Quants' : sec.toUpperCase()}
                         </button>
@@ -2331,7 +2562,8 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                       <NumberInput
                         value={newVarcTotalQs}
                         onChange={handleVarcTotalChange}
-                        className="w-full bg-appBg-secondary border border-appBorder rounded-xl px-3 py-1.5 font-mono text-xs text-appText-primary focus:outline-none focus:border-indigo-500"
+                        disabled={isCapabilityMode}
+                        className={`w-full bg-appBg-secondary border border-appBorder rounded-xl px-3 py-1.5 font-mono text-xs text-appText-primary focus:outline-none focus:border-indigo-500 ${isCapabilityMode ? 'opacity-70 bg-appBg-secondary/50 cursor-not-allowed border-appBorder' : 'border-appBorder'}`}
                       />
                       <span className="text-[10px] text-appText-disabled block">Max Marks: {varcVal * 3}</span>
                       {varcTotalError && (
@@ -2347,7 +2579,8 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                       <NumberInput
                         value={newDilrTotalQs}
                         onChange={handleDilrTotalChange}
-                        className="w-full bg-appBg-secondary border border-appBorder rounded-xl px-3 py-1.5 font-mono text-xs text-appText-primary focus:outline-none focus:border-indigo-500"
+                        disabled={isCapabilityMode}
+                        className={`w-full bg-appBg-secondary border border-appBorder rounded-xl px-3 py-1.5 font-mono text-xs text-appText-primary focus:outline-none focus:border-indigo-500 ${isCapabilityMode ? 'opacity-70 bg-appBg-secondary/50 cursor-not-allowed border-appBorder' : 'border-appBorder'}`}
                       />
                       <span className="text-[10px] text-appText-disabled block">Max Marks: {dilrVal * 3}</span>
                       {dilrTotalError && (
@@ -2363,7 +2596,8 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                       <NumberInput
                         value={newQaTotalQs}
                         onChange={handleQaTotalChange}
-                        className="w-full bg-appBg-secondary border border-appBorder rounded-xl px-3 py-1.5 font-mono text-xs text-appText-primary focus:outline-none focus:border-indigo-500"
+                        disabled={isCapabilityMode}
+                        className={`w-full bg-appBg-secondary border border-appBorder rounded-xl px-3 py-1.5 font-mono text-xs text-appText-primary focus:outline-none focus:border-indigo-500 ${isCapabilityMode ? 'opacity-70 bg-appBg-secondary/50 cursor-not-allowed border-appBorder' : 'border-appBorder'}`}
                       />
                       <span className="text-[10px] text-appText-disabled block">Max Marks: {qaVal * 3}</span>
                       {qaTotalError && (
@@ -2385,23 +2619,25 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                         <div className="flex gap-1 bg-appBg-secondary border border-appBorder rounded-lg p-0.5 select-none">
                           <button
                             type="button"
-                            onClick={() => handleVarcInputStyleChange('detailed')}
+                            onClick={() => !isCapabilityMode && handleVarcInputStyleChange('detailed')}
+                            disabled={isCapabilityMode}
                             className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase transition cursor-pointer ${
                               varcInputStyle === 'detailed'
-                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-650 shadow-sm'
+                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-655 shadow-sm'
                                 : 'text-appText-muted hover:text-appText-primary'
-                            }`}
+                            } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             Detailed
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleVarcInputStyleChange('notsure')}
+                            onClick={() => !isCapabilityMode && handleVarcInputStyleChange('notsure')}
+                            disabled={isCapabilityMode}
                             className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase transition cursor-pointer ${
                               varcInputStyle === 'notsure'
-                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-650 shadow-sm'
+                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-655 shadow-sm'
                                 : 'text-appText-muted hover:text-appText-primary'
-                            }`}
+                            } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             Not Sure
                           </button>
@@ -2422,23 +2658,25 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                         <div className="flex gap-1 bg-appBg-secondary border border-appBorder rounded-lg p-0.5 select-none">
                           <button
                             type="button"
-                            onClick={() => handleDilrInputStyleChange('detailed')}
+                            onClick={() => !isCapabilityMode && handleDilrInputStyleChange('detailed')}
+                            disabled={isCapabilityMode}
                             className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase transition cursor-pointer ${
                               dilrInputStyle === 'detailed'
-                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-650 shadow-sm'
+                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-655 shadow-sm'
                                 : 'text-appText-muted hover:text-appText-primary'
-                            }`}
+                            } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             Detailed
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDilrInputStyleChange('notsure')}
+                            onClick={() => !isCapabilityMode && handleDilrInputStyleChange('notsure')}
+                            disabled={isCapabilityMode}
                             className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase transition cursor-pointer ${
                               dilrInputStyle === 'notsure'
-                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-650 shadow-sm'
+                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-655 shadow-sm'
                                 : 'text-appText-muted hover:text-appText-primary'
-                            }`}
+                            } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             Not Sure
                           </button>
@@ -2459,23 +2697,25 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                         <div className="flex gap-1 bg-appBg-secondary border border-appBorder rounded-lg p-0.5 select-none">
                           <button
                             type="button"
-                            onClick={() => handleQaInputStyleChange('detailed')}
+                            onClick={() => !isCapabilityMode && handleQaInputStyleChange('detailed')}
+                            disabled={isCapabilityMode}
                             className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase transition cursor-pointer ${
                               qaInputStyle === 'detailed'
-                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-650 shadow-sm'
+                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-655 shadow-sm'
                                 : 'text-appText-muted hover:text-appText-primary'
-                            }`}
+                            } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             Detailed
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleQaInputStyleChange('notsure')}
+                            onClick={() => !isCapabilityMode && handleQaInputStyleChange('notsure')}
+                            disabled={isCapabilityMode}
                             className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase transition cursor-pointer ${
                               qaInputStyle === 'notsure'
-                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-650 shadow-sm'
+                                ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-655 shadow-sm'
                                 : 'text-appText-muted hover:text-appText-primary'
-                            }`}
+                            } ${isCapabilityMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             Not Sure
                           </button>
@@ -2493,7 +2733,7 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
             <div className="flex justify-end gap-3 p-4 border-t border-appBorder bg-appBg-secondary/50">
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={closeAddModal}
                 className="px-4 py-2 rounded-xl border border-appBorder text-[10px] font-bold uppercase text-appText-secondary hover:bg-cardBg-hover transition cursor-pointer"
               >
                 Cancel
@@ -2504,7 +2744,7 @@ function Analytics({ currentUserEmail = '' }: AnalyticsProps) {
                 disabled={!isFormValid()}
                 className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold uppercase transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                Save Report Card
+                {isCapabilityMode ? 'Save Capability Report' : 'Save Report Card'}
               </button>
             </div>
           </div>

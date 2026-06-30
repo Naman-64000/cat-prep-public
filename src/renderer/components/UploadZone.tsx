@@ -1,4 +1,5 @@
-import { DragEvent, useRef, useState } from 'react'
+import { DragEvent, useRef, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 const acceptedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
 
@@ -41,7 +42,29 @@ const sectionStyles = {
 function UploadZone({ section, onUpload, onError }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [isWindowDragging, setIsWindowDragging] = useState(false)
   const style = sectionStyles[section]
+
+  useEffect(() => {
+    const handleWindowDragEnter = (e: DragEvent | any) => {
+      e.preventDefault()
+      if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+        setIsWindowDragging(true)
+      }
+    }
+
+    const handleWindowDragOver = (e: DragEvent | any) => {
+      e.preventDefault()
+    }
+
+    window.addEventListener('dragenter', handleWindowDragEnter)
+    window.addEventListener('dragover', handleWindowDragOver)
+
+    return () => {
+      window.removeEventListener('dragenter', handleWindowDragEnter)
+      window.removeEventListener('dragover', handleWindowDragOver)
+    }
+  }, [])
 
   async function handleFiles(files: FileList | null | File[]) {
     if (!files) return
@@ -134,6 +157,33 @@ function UploadZone({ section, onUpload, onError }: UploadZoneProps) {
           />
         </div>
       </div>
+
+      {isWindowDragging && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md border-4 border-dashed border-indigo-500 m-4 rounded-3xl animate-fadeIn cursor-copy"
+          onDragOver={(e) => e.preventDefault()}
+          onDragLeave={(e) => {
+            e.preventDefault()
+            setIsWindowDragging(false)
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            setIsWindowDragging(false)
+            handleFiles(e.dataTransfer.files)
+          }}
+        >
+          <div className="text-center space-y-4 pointer-events-none select-none">
+            <svg className="w-16 h-16 text-indigo-600 dark:text-indigo-400 mx-auto animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 dark:text-white">Drop images anywhere to upload</h3>
+            <p className="text-xs text-slate-600 dark:text-indigo-200">
+              Drop your question images here to analyze them in {section} page
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
