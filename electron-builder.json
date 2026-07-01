@@ -7,7 +7,9 @@
     "repo": "cat-prep-public"
   },
   "files": [
-    "dist/**",
+    "dist/main/**",
+    "dist/renderer/**",
+    "dist/preload.js",
     "package.json",
     "prisma/schema.prisma",
     "prisma/public.db",
