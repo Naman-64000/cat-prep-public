@@ -232,24 +232,33 @@ cat-prep/
 
 ---
 
-## Installation Guide (Unsigned Warning Bypass)
+## ⚠️ Security Notice & Safe Installation Instructions
 
-Because this is a free, open-source project, the built installers are not code-signed. Developer code signing certificates cost $99/year for macOS and $300+/year for Windows, so keeping the binaries unsigned keeps this project 100% free and community-driven. 
+Because this is an open-source, community-driven tool, the application is not signed with commercial certificates from Microsoft or Apple. As a result, your operating system may display warnings such as "Unverified Developer" or "Windows protected your PC". These warnings are expected and can be safely bypassed if you downloaded the application from this official GitHub release.
 
-When you install the app for the first time, your operating system will display a security warning. Follow the steps below to bypass it:
+### 🍏 For macOS Users (.dmg)
 
-### For Windows Users (Recommended - `.zip`):
-1. Download the `CAT.Knowledge.Vault-0.1.0-win.zip` (or `CAT.Knowledge.Vault-0.1.0-arm64-win.zip` depending on architecture) file.
-2. Right-click the `.zip` file and select **Extract All** to unzip it.
-3. Open the extracted folder, go to `win-unpacked`, and double-click **`CAT Knowledge Vault.exe`**.
-4. If Windows SmartScreen blocks it, click **More Info** -> **Run Anyway**.
-*(Note: Using the `.zip` version is recommended because the `.exe` installer is often blocked or quarantined by Windows Defender due to being unsigned).*
+1. Download the `.dmg` file and double-click it to open it.
+2. Drag **CAT Knowledge Vault** into your `Applications` folder.
+3. Open your `Applications` folder, right-click (or hold `Control` and click) **CAT Knowledge Vault**, and select **Open**.
+4. A prompt will appear saying the app is from an unidentified developer. Click **Open**. (You only need to do this once.)
+5. If macOS blocks the app, go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
 
-### For macOS Users (Gatekeeper Bypass):
-1. Download the `.dmg` file, open it, and drag the **CAT Knowledge Vault** app icon into your **Applications** folder.
-2. Navigate to your Applications folder, **Right-click** (or hold `Control` and click) the **CAT Knowledge Vault** app icon, and select **Open** from the context menu.
-3. A confirmation dialog will appear saying *"macOS cannot verify the developer..."*. Click **Open** to launch the app.
-*(Note: If it still does not open, go to **System Settings > Privacy & Security**, scroll down to the Security section, and click **Open Anyway**).*
+### 💻 For Windows Users (.exe Installer - Recommended)
+
+1. Download **`CAT.Knowledge.Vault.Setup.0.1.1.exe`**.
+2. Double-click the installer to begin installation.
+3. If Windows SmartScreen displays a warning, click **More info**, then click **Run anyway**.
+4. Follow the installation wizard to complete setup.
+
+### 💻 For Windows Users (.zip Portable Version)
+
+1. Download **`CAT.Knowledge.Vault-0.1.1-arm64-win.zip`**.
+2. Right-click the ZIP file and select **Extract All...**.
+3. Open the extracted folder and run **`CAT Knowledge Vault.exe`**.
+4. If Windows SmartScreen displays a warning, click **More info**, then click **Run anyway**.
+
+> Note: The portable ZIP version is intended for ARM64-based Windows devices.
 
 ---
 
