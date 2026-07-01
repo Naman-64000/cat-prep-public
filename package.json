@@ -1,6 +1,6 @@
 {
   "name": "cat-knowledge-vault",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "A secure CAT preparation revision vault and study tracker with AI-generated solutions.",
   "main": "dist/main/index.js",
