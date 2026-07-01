@@ -15,9 +15,26 @@ export function getImagesDirectory(userId: string) {
   return dir
 }
 
+export function getNoteImagesDirectory(userId: string) {
+  const cleanUserId = userId.replace(/[^a-zA-Z0-9@._-]/g, '_')
+  const dir = path.join(getAppDataPath(), 'images', cleanUserId, 'notes')
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+  return dir
+}
+
 export async function saveQuestionImage(imageBuffer: Buffer, fileName: string, userId: string) {
   const safeName = `${Date.now()}-${fileName}`.replace(/\s+/g, '_')
   const directory = getImagesDirectory(userId)
+  const fullPath = path.join(directory, safeName)
+  await fs.promises.writeFile(fullPath, imageBuffer)
+  return fullPath
+}
+
+export async function saveNoteImage(imageBuffer: Buffer, fileName: string, userId: string) {
+  const safeName = `${Date.now()}-${fileName}`.replace(/\s+/g, '_')
+  const directory = getNoteImagesDirectory(userId)
   const fullPath = path.join(directory, safeName)
   await fs.promises.writeFile(fullPath, imageBuffer)
   return fullPath

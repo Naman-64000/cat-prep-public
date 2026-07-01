@@ -6,7 +6,7 @@ import crypto from 'crypto'
 import { execSync } from 'child_process'
 import { app, BrowserWindow, ipcMain, nativeTheme, shell, dialog } from 'electron'
 import { initializePrisma, prisma } from './prisma'
-import { saveQuestionImage, getImagesDirectory } from './storage'
+import { saveQuestionImage, getImagesDirectory, saveNoteImage } from './storage'
 import { setupGemini, setCustomGeminiKey, verifyGeminiKey } from './gemini'
 import { QuestionCreateRequest, QuestionAddImagesRequest, StudyLogRequest } from './types'
 import { autoUpdater } from 'electron-updater'
@@ -1096,4 +1096,101 @@ ipcMain.handle('suggestion:send', async (_event, payload: { text: string }) => {
     return { success: false, error: (error as Error).message }
   }
 })
+
+/* ==========================================================================
+   NOTE HANDLERS (SCOPED TO ACTIVE USER)
+   ========================================================================== */
+
+ipcMain.handle('note:list', async () => {
+  try {
+    if (!activeUserId) {
+      throw new Error('Unauthorized')
+    }
+    const notes = await prisma.note.findMany({
+      where: { userId: activeUserId },
+      orderBy: [
+        { isPinned: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    })
+    return { success: true, notes }
+  } catch (error) {
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('note:save', async (_event, payload: any) => {
+  try {
+    if (!activeUserId) {
+      throw new Error('Unauthorized')
+    }
+    const { id, title, content, section, subtopic, topic, isPinned } = payload
+
+    let note
+    if (id) {
+      // Update
+      note = await prisma.note.update({
+        where: { id: Number(id), userId: activeUserId },
+        data: {
+          title,
+          content,
+          section,
+          subtopic: subtopic || '',
+          topic: topic || '',
+          isPinned: !!isPinned
+        }
+      })
+    } else {
+      // Create
+      note = await prisma.note.create({
+        data: {
+          title,
+          content,
+          section,
+          subtopic: subtopic || '',
+          topic: topic || '',
+          isPinned: !!isPinned,
+          userId: activeUserId
+        }
+      })
+    }
+
+    return { success: true, note }
+  } catch (error) {
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('note:delete', async (_event, id: number) => {
+  try {
+    if (!activeUserId) {
+      throw new Error('Unauthorized')
+    }
+    await prisma.note.delete({
+      where: { id: Number(id), userId: activeUserId }
+    })
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('note:uploadImage', async (_event, payload: { imageBuffer: Uint8Array; fileName: string }) => {
+  try {
+    if (!activeUserId) {
+      throw new Error('Unauthorized')
+    }
+    const buffer = Buffer.from(payload.imageBuffer)
+    const absolutePath = await saveNoteImage(buffer, payload.fileName, activeUserId)
+    
+    // Normalize and return file:// url
+    const normalized = absolutePath.replace(/\\/g, '/')
+    const fileUrl = normalized.startsWith('/') ? `file://${normalized}` : `file:///${normalized}`
+    
+    return { success: true, url: fileUrl }
+  } catch (error) {
+    return { success: false, error: (error as Error).message }
+  }
+})
+
 

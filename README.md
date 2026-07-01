@@ -99,15 +99,22 @@ CAT Knowledge Vault is designed to help aspirants organize CAT practice question
 * **Metadata & Time Slots**: Assign specific dates, custom or default topic tags, and scheduled time-slots (with strict format validation) for every task.
 * **Persistent Reminders**: Integrates with local notifications to remind users to transfer finished action items into their main Study Tracker logs.
 
-### 12. Custom Settings & Local Data Privacy
+### 12. Rich Revision Notes Workspace
+* **Dynamic Content Blocks**: Notes are composed of dynamically reorderable blocks:
+  * **Text Blocks**: Rich multi-line text areas.
+  * **Image Blocks**: Support file uploads, drag & drop, and direct clipboard copy-pasting (`Ctrl+V` / `Cmd+V`). Offers layout positioning options (Left, Center, Right alignments and width percentages: 25%, 50%, 75%, 100%).
+* **Prep Category Scoping**: Notes are tagged with prep section categories (General, VARC, DILR, Quants) and optional topic trees populated from standard prep indices.
+* **Pins & Filtering**: Users can search note title/content, filter notes by category pills, and pin critical notes to lock them at the top of the feed.
+
+### 13. Custom Settings & Local Data Privacy
 * **Local Privacy Assurance**: The app clarifies how data is stored locally in the SQLite database with no cloud fallback, guaranteeing 100% offline private use.
 * **Gemini API Key Setup**: Verify, encrypt (via `aes-256-cbc`), and save personal Google Gemini API keys. Clearing a key disables solution generation features safely.
 * **Feedback Suggestions Form**: Submit questions or feature feedback directly from the app. A 1-hour rate limit prevents double-submissions.
 
-### 13. Light & Dark Themes
+### 14. Light & Dark Themes
 * **Dynamic Theme Switcher**: Toggle between light and dark modes from the sidebar. The setting is persisted in local storage.
 
-### 14. Color-Coded Toast Notifications
+### 15. Color-Coded Toast Notifications
 * **Visual Status Alert**: Toast alerts are colored green for successful operations (uploads, removals, movements) and red for warnings, failed attempts, and invalid entries (e.g. Unsupported file type).
 
 ---

@@ -2,8 +2,8 @@ import { Dispatch, SetStateAction } from 'react'
 import { sections, sectionLabels } from '../utils/constants'
 
 type SidebarProps = {
-  active: 'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER' | 'SETTINGS'
-  onChange: Dispatch<SetStateAction<'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER' | 'SETTINGS'>>
+  active: 'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER' | 'NOTES' | 'SETTINGS'
+  onChange: Dispatch<SetStateAction<'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER' | 'NOTES' | 'SETTINGS'>>
   theme: 'light' | 'dark'
   onThemeToggle: () => void
   currentUserEmail: string
@@ -25,6 +25,8 @@ function Sidebar({ active, onChange, theme, onThemeToggle, currentUserEmail, onL
         return 'bg-[#EC4899]'
       case 'TRACKER':
         return 'bg-[#38BDF8]'
+      case 'NOTES':
+        return 'bg-[#14B8A6]'
       case 'SETTINGS':
         return 'bg-[#F59E0B]'
       default:
@@ -103,6 +105,21 @@ function Sidebar({ active, onChange, theme, onThemeToggle, currentUserEmail, onL
               />
             )}
             Study Tracker
+          </button>
+          <button
+            className={`relative w-full rounded-xl pl-7 pr-3.5 py-2.5 text-left text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              active === 'NOTES'
+                ? 'bg-white border border-[#c5c1b8] text-slate-800 shadow-sm dark:bg-[#273449] dark:border-slate-800 dark:text-slate-100 font-bold'
+                : 'bg-transparent border border-transparent text-appText-muted hover:text-appText-primary hover:bg-[#eae7e1]/50 dark:hover:bg-slate-800/40'
+            }`}
+            onClick={() => onChange('NOTES')}
+          >
+            {active === 'NOTES' && (
+              <span
+                className={`absolute left-3 top-3.5 w-1 h-3 rounded-full ${getIndicatorColor('NOTES')}`}
+              />
+            )}
+            My Notes
           </button>
           {/* Settings */}
           <button

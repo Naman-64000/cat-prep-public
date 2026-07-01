@@ -3,7 +3,7 @@
   "productName": "CAT Knowledge Vault",
   "publish": {
     "provider": "github",
-    "owner": "Naman-64000",
+    "owner": "YourUsername",
     "repo": "cat-prep-public"
   },
   "files": [
@@ -20,7 +20,7 @@
   ],
   "directories": {
     "buildResources": "assets",
-    "output": "release"
+    "output": "dist/release"
   },
   "asar": true,
   "mac": {

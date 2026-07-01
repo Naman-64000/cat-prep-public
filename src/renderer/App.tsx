@@ -5,12 +5,13 @@ import StudyTracker from './components/StudyTracker'
 import Analytics from './components/Analytics'
 import AuthPage from './components/AuthPage'
 import Settings from './components/Settings'
+import Notes from './components/Notes'
 
 function App() {
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string } | null>(null)
   const [loadingSession, setLoadingSession] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [activePage, setActivePage] = useState<'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER' | 'SETTINGS'>('VARC')
+  const [activePage, setActivePage] = useState<'VARC' | 'LRDI' | 'QUANTS' | 'ANALYTICS' | 'TRACKER' | 'NOTES' | 'SETTINGS'>('VARC')
   const [apiError, setApiError] = useState<string | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme')
@@ -58,6 +59,9 @@ function App() {
   const content = useMemo(() => {
     if (activePage === 'SETTINGS') {
       return <Settings currentUserEmail={currentUser?.email || ''} />
+    }
+    if (activePage === 'NOTES') {
+      return <Notes currentUserEmail={currentUser?.email || ''} />
     }
     if (activePage === 'TRACKER') {
       return <StudyTracker currentUserEmail={currentUser?.email || ''} />
