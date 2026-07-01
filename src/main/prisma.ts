@@ -65,7 +65,29 @@ export async function initializePrisma() {
     }
 
     try {
-      // 3. Check if column generationCount exists in Question
+      // 3. Create Note table if not exists
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS Note (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          section TEXT NOT NULL,
+          subtopic TEXT NOT NULL DEFAULT '',
+          topic TEXT NOT NULL DEFAULT '',
+          isPinned BOOLEAN NOT NULL DEFAULT 0,
+          createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          userId TEXT NOT NULL,
+          FOREIGN KEY (userId) REFERENCES User(id) ON DELETE CASCADE ON UPDATE CASCADE
+        )
+      `)
+      console.log('Successfully checked/created Note table')
+    } catch (err) {
+      console.error('Failed to check/create Note table:', err)
+    }
+
+    try {
+      // 4. Check if column generationCount exists in Question
       const tableInfo: any[] = await prisma.$queryRawUnsafe(`PRAGMA table_info(Question)`)
       const hasGenerationCount = tableInfo.some((col: any) => col.name === 'generationCount')
       if (!hasGenerationCount) {

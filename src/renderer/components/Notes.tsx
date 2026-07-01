@@ -202,6 +202,7 @@ function Notes({ currentUserEmail }: NotesProps) {
           triggerExplicitSave(expandedNoteId)
           setEditingNoteId(null)
           setExpandedNoteId(null)
+          setEditOnlyNoteId(null)
           setActiveDropdownNoteId(null)
         }
       }
@@ -1023,7 +1024,14 @@ function Notes({ currentUserEmail }: NotesProps) {
               <div
                 key={note.id}
                 id={`note-card-${note.id}`}
-                className={`rounded-2xl border bg-cardBg-default p-5 shadow-sm transition-all duration-200 relative select-text ${theme.card} ${
+                onClick={() => {
+                  if (!isExpanded && !isEditing) {
+                    handleExpandNote(note)
+                  }
+                }}
+                className={`rounded-2xl border bg-cardBg-default p-5 shadow-sm transition-all duration-200 relative select-text ${
+                  !isExpanded && !isEditing ? 'cursor-pointer hover:border-sky-500/50' : ''
+                } ${theme.card} ${
                   note.isPinned 
                     ? 'border-amber-500/40 bg-amber-500/[0.01] dark:bg-amber-500/[0.02]' 
                     : 'border-appBorder'
@@ -1032,7 +1040,14 @@ function Notes({ currentUserEmail }: NotesProps) {
                 }`}
               >
                 {/* Note Card Header (No select-none, text is copyable) */}
-                <div className="flex items-center justify-between gap-3">
+                <div 
+                  className={`flex items-center justify-between gap-3 ${isExpanded && !isEditing ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                  onClick={() => {
+                    if (isExpanded && !isEditing) {
+                      setExpandedNoteId(null)
+                    }
+                  }}
+                >
                   {isEditing ? (
                     // Editing inline: Title input
                     <div className="flex-1 flex items-center gap-3">
@@ -1042,6 +1057,7 @@ function Notes({ currentUserEmail }: NotesProps) {
                         onChange={(e) => setEditTitle(e.target.value)}
                         placeholder="Note Title..."
                         className="flex-1 bg-appBg-secondary border border-appBorder rounded-xl px-3 py-1.5 text-xs text-appText-primary font-bold outline-none focus:border-teal-500"
+                        onClick={(e) => e.stopPropagation()}
                       />
                       {/* Read-Only section category badge after creation */}
                       <span className={`rounded-full border px-2.5 py-0.5 text-[9px] font-bold tracking-wide uppercase select-none ${theme.tag}`}>
@@ -1050,12 +1066,7 @@ function Notes({ currentUserEmail }: NotesProps) {
                     </div>
                   ) : (
                     // View: Note details
-                    <div
-                      onClick={() => {
-                        handleExpandNote(note)
-                      }}
-                      className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2.5 cursor-pointer text-left"
-                    >
+                    <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2.5 text-left">
                       <div className="flex items-center gap-2">
                         {note.isPinned && (
                           <span className="text-amber-500 text-xs" title="Pinned Note">📌</span>
@@ -1084,7 +1095,10 @@ function Notes({ currentUserEmail }: NotesProps) {
                     {/* Pin Action Button - replaced with Thumbtack icon */}
                     <button
                       type="button"
-                      onClick={() => togglePinStatus(note)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        togglePinStatus(note)
+                      }}
                       className={`p-1.5 rounded transition cursor-pointer hover:bg-appBg-secondary ${
                         note.isPinned ? 'text-amber-500' : 'text-appText-disabled hover:text-amber-500'
                       }`}
@@ -1116,7 +1130,8 @@ function Notes({ currentUserEmail }: NotesProps) {
                     {/* Expand/Collapse Chevron */}
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation()
                         if (isExpanded) {
                           if (isEditing) {
                             triggerExplicitSave(note.id)

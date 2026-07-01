@@ -120,10 +120,29 @@ function StudyTracker({ currentUserEmail }: { currentUserEmail: string }) {
   const [filterTag, setFilterTag] = useState('')
 
   const filterTagsList = useMemo(() => {
-    if (!filterSection) return []
-    const secKey = filterSection === 'DILR' ? 'DILR' : filterSection
-    return customTags[secKey] || []
-  }, [filterSection, customTags])
+    const allTags = new Set<string>()
+
+    if (filterSection) {
+      const secKey = filterSection === 'DILR' ? 'DILR' : filterSection
+      const cTags = customTags[secKey] || []
+      cTags.forEach((t) => allTags.add(t))
+
+      records.forEach((r) => {
+        if (r.section === filterSection && r.tag) {
+          allTags.add(r.tag)
+        }
+      })
+    } else {
+      Object.values(customTags).flat().forEach((t) => allTags.add(t))
+      records.forEach((r) => {
+        if (r.tag) {
+          allTags.add(r.tag)
+        }
+      })
+    }
+
+    return Array.from(allTags).sort()
+  }, [filterSection, customTags, records])
 
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
@@ -132,6 +151,13 @@ function StudyTracker({ currentUserEmail }: { currentUserEmail: string }) {
       return true
     })
   }, [records, filterSection, filterTag])
+
+  const totalStudyTime = useMemo(() => {
+    const totalMinutes = filteredRecords.reduce((acc, r) => acc + (r.hours * 60) + r.minutes, 0)
+    const hours = Math.floor(totalMinutes / 60)
+    const mins = totalMinutes % 60
+    return { hours, mins }
+  }, [filteredRecords])
 
   const handleAddTag = () => {
     const trimmed = newTag.trim()
@@ -680,39 +706,39 @@ function StudyTracker({ currentUserEmail }: { currentUserEmail: string }) {
           <div className="mt-3 space-y-4">
             {/* Filters Area */}
             <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl border border-appBorder bg-appBg-secondary/35 text-[10px] font-bold">
-              <div className="flex items-center gap-2">
-                <span className="text-appText-muted uppercase tracking-wider">Filter Section:</span>
-                <div className="flex flex-wrap gap-1 select-none">
-                  {[
-                    { value: '', label: 'Show All' },
-                    { value: 'VARC', label: 'VARC' },
-                    { value: 'DILR', label: 'DILR' },
-                    { value: 'QUANTS', label: 'QUANTS' },
-                    { value: 'ALL', label: 'ALL (General)' }
-                  ].map((opt) => {
-                    const isActive = filterSection === opt.value
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => {
-                          setFilterSection(opt.value)
-                          setFilterTag('')
-                        }}
-                        className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border transition cursor-pointer select-none ${
-                          isActive
-                            ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-650 shadow-sm'
-                            : 'bg-appBg-secondary border-appBorder text-appText-muted hover:text-appText-primary'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    )
-                  })}
+              <div className="flex flex-wrap items-center gap-3 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-appText-muted uppercase tracking-wider">Filter Section:</span>
+                  <div className="flex flex-wrap gap-1 select-none">
+                    {[
+                      { value: '', label: 'Show All' },
+                      { value: 'VARC', label: 'VARC' },
+                      { value: 'DILR', label: 'DILR' },
+                      { value: 'QUANTS', label: 'QUANTS' },
+                      { value: 'ALL', label: 'ALL (General)' }
+                    ].map((opt) => {
+                      const isActive = filterSection === opt.value
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setFilterSection(opt.value)
+                            setFilterTag('')
+                          }}
+                          className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border transition cursor-pointer select-none ${
+                            isActive
+                              ? 'bg-slate-900 border-slate-900 text-white dark:bg-indigo-650 dark:border-indigo-650 shadow-sm'
+                              : 'bg-appBg-secondary border-appBorder text-appText-muted hover:text-appText-primary'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              {filterSection && (
                 <div className="flex items-center gap-2">
                   <span className="text-appText-muted uppercase tracking-wider">Filter Tag:</span>
                   <div className="flex flex-wrap gap-1 select-none">
@@ -746,7 +772,12 @@ function StudyTracker({ currentUserEmail }: { currentUserEmail: string }) {
                     })}
                   </div>
                 </div>
-              )}
+              </div>
+
+              <div className="flex items-center gap-1.5 ml-auto shrink-0 bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 px-3 py-1 rounded-full border border-sky-500/20">
+                <span className="uppercase tracking-wider text-[9px] opacity-80">Total:</span>
+                <span className="font-extrabold text-[11px]">{totalStudyTime.hours}h {totalStudyTime.mins}m</span>
+              </div>
             </div>
 
             {filteredRecords.length === 0 ? (
